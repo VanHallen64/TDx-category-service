@@ -23,10 +23,14 @@ $PromptBox.Prompts = @(
     New-AnyBoxPrompt -Name "Staff" -InputType Checkbox -Message "Staff"
     New-AnyBoxPrompt -Name "Students" -InputType Checkbox -Message "Students"
 )
+$PromptBox.Buttons = @(
+    New-AnyBoxButton -Text 'Submit' -IsDefault
+    New-AnyBoxButton -Text 'Cancel' -IsCancel
+)
 $Input = $PromptBox | Show-AnyBox
 $Input
 
-if ($CategoryNameInput.Cancel -or $CategoryShortNameInput.Cancel) {
+if ($Input.CatName.Cancel -or $Input.ShortName.Cancel) {
     Show-AnyBox -Message "No category information provided" -Buttons 'Ok'
     Exit
 }
