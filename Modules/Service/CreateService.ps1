@@ -8,7 +8,7 @@ function New-Service($CategoryId, $UserInput) {
     $CurrentField = Find-SeElement -Wait -Timeout 60 -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtName"
     Send-SeKeys -Element $CurrentField -Keys $ServiceName
     $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtShortDescription"
-    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket"
+    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket."
 
     # Long description
     $SourceBtn = Find-SeElement -Wait -Timeout 15 -Driver $Driver -Id "cke_16"
@@ -17,7 +17,7 @@ function New-Service($CategoryId, $UserInput) {
     $WebDriverWait.Until($Condition) | Out-null
     Invoke-SeClick -Element $SourceBtn
     $CurrentField = Find-SeElement -Wait -Timeout 10 -Driver $Driver -XPath '//div[@id="cke_1_contents"]//textarea'
-    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket"
+    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket."
 
     # Order
     $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtOrder"
@@ -68,9 +68,9 @@ function New-Service($CategoryId, $UserInput) {
     }
     if ($Audience) {
         $Audience = $Audience.Substring(0, $Audience.Length - 2)
+        $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_attribute4210"
+        Send-SeKeys -Element $CurrentField -Keys $Audience
     }
-    $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_attribute4210"
-    Send-SeKeys -Element $CurrentField -Keys $Audience
     
     # Requirements
     if ($Audience) {
@@ -80,4 +80,28 @@ function New-Service($CategoryId, $UserInput) {
         $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_attribute4212"
         Send-SeKeys -Element $CurrentField -Keys "Be $($Audience.ToLower())."
     }
+
+    # Request the service
+    $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_attribute4213"
+    Send-SeKeys -Element $CurrentField -Keys "Click on the Request Support button."
+
+    # Save service
+    $SaveBtn = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_btnSave"
+    Invoke-SeClick -Element $SaveBtn
+
+    # Select form
+    $EditBtn = Find-SeElement -Driver $Driver -Wait -Timeout 60 -XPath "//span[@id='ctl00_ctl00_cpContent_cpContent_lnkEdit']/a"
+    Invoke-SeClick -Element $EditBtn
+    $FormBtn = Find-SeElement -Driver $Driver -Wait -Timeout 60 -XPath "//a[text()='Form']"
+    Invoke-SeClick -Element $FormBtn
+    $SelectFormRadio = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_ctl00_cpContent_cpContent_cpContent_rbUseExistingForm"
+    Invoke-SeClick -Element $SelectFormRadio
+    $Option = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_ctl00_cpContent_cpContent_cpContent_ddlRequestForm"
+    $SelectElement = [OpenQA.Selenium.Support.UI.SelectElement]::new($Option)
+    $SelectElement.SelectByValue(375) # 'Service Request Form' ID is 375
+
+    # Save form
+    $SaveBtn = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_ctl00_cpContent_cpContent_cpContent_btnSaveNew"
+    Invoke-SeClick -Element $SaveBtn
+
 }  
