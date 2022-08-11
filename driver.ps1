@@ -29,11 +29,8 @@ $PromptBox.Buttons = @(
     New-AnyBoxButton -Text 'Cancel' -IsCancel
 )
 $UserInput = $PromptBox | Show-AnyBox
-$UserInput
 
-$Responsible = "Client Services - Service Desk - Support"
-
-if ($UserInput.Cancel -or $UserInput.Cancel) {
+if ($UserInput.Cancel) {
     Show-AnyBox -Message "Operation cancelled" -Buttons 'Ok'
     Exit
 }
@@ -63,5 +60,4 @@ New-AutomationRule $ServiceId $UserInput.ServiceName $UserInput.CatName $UserInp
 
 # Stop driver
 Stop-SeDriver -Driver $Driver
-
 Show-AnyBox -Message "Service created" -Button "Ok" -DefaultButton "Ok"
