@@ -1,38 +1,8 @@
 #------ Create General Service Offering ------#
 
-function New-AutomationRule($ServiceOfferingId, $GTSServiceOfferingId, $GTSServiceOfferingName, $ServiceName, $EvalOrder) {
-    # Get form name
-    Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/ServiceOfferingDet?ID=$ServiceOfferingId") -Driver $Driver
-    $EditBtn = Find-SeElement -Wait -Timeout 60 -Driver $Driver -XPath "//span[@id='ctl00_ctl00_cpContent_cpContent_lnkEdit']//a"
-    Invoke-SeClick -Element $EditBtn
-    $GoToForm = Find-SeElement -Driver $Driver -XPath "//ul[@class='nav nav-shelf']//li//a[contains(@href,'Form')]"
-    Invoke-SeClick -Element $GoToForm
-    $FormName = Find-SeElement -Driver $Driver -XPath "//div[@id='ctl00_ctl00_ctl00_cpContent_cpContent_cpContent_divSettingsPanel']/h2"
-    $FormName = $FormName.Text
-    
-    # Get responsible ID
-    Enter-SeUrl ("$Domain"+"TDAdmin/1CC3FF6F-33A6-4148-B145-F5581A4F32BD/82/Service/Forms.aspx?ComponentID=9") -Driver $Driver
-    $CurrentField = Find-SeElement -Driver $Driver -Id "txtSearch"
-    Send-SeKeys -Element $CurrentField -Keys $FormName
-    $SearchBtn = Find-SeElement -Driver $Driver -Id "btnSearch"
-    Invoke-SeClick -Element $SearchBtn
-    $SelectForm = Find-SeElement -Driver $Driver -XPath "//td//a[contains(text(),'$FormName')]"
-    Invoke-SeClick -Element $SelectForm
-    $Windows = Get-SeWindow -Driver $Driver
-    Switch-SeWindow -Driver $Driver -Window $Windows[1]
-    $ResponsibleId = Find-SeElement -Driver $Driver -Id "a_1279-value"
-    $ResponsibleId = Get-SeElementAttribute -Element $ResponsibleId -Attribute "value"
-
-    # Get responsible name
-    try {
-        $Responsible = Invoke-RestMethod -Method 'Get' -Uri ("$Domain" + "TDWebApi/api/groups/$ResponsibleId") -Headers $auth_headers
-    }
-    catch {
-        $Responsible = Invoke-RestMethod -Method 'Get' -Uri ("$Domain" + "TDWebApi/api/people/$ResponsibleId") -Headers $auth_headers
-    }
-    $Responsible = $Responsible.Name
-    $Driver.Close()
-    Switch-SeWindow -Driver $Driver -Window $Windows[0]
+function New-AutomationRule($ServiceId, $ServiceName, $CategoryName, $Responsible, $EvalOrder) {
+    $TextInfo = (Get-Culture).TextInfo
+    $Responsible = $TextInfo.toTitleCase($Responsible)
 
     # New rule
     Enter-SeUrl ("$Domain"+"TDAdmin/1cc3ff6f-33a6-4148-b145-f5581a4f32bd/82/AutomationRules/Index?Component=9") -Driver $Driver
@@ -41,7 +11,8 @@ function New-AutomationRule($ServiceOfferingId, $GTSServiceOfferingId, $GTSServi
 
     # Name
     $CurrentField = Find-SeElement -Driver $Driver -Id "Name"
-    Send-SeKeys -Element $CurrentField -Keys "GTS $ServiceName - Assign to $Responsible"
+    $TextInfo = (Get-Culture).TextInfo
+    Send-SeKeys -Element $CurrentField -Keys "GTS $CategoryName - Assign to $Responsible"
 
     # Order
     $CurrentField = Find-SeElement -Driver $Driver -Id "Order"
@@ -54,7 +25,7 @@ function New-AutomationRule($ServiceOfferingId, $GTSServiceOfferingId, $GTSServi
 
     # Description
     $CurrentField = Find-SeElement -Driver $Driver -Id "Description"
-    Send-SeKeys -Element $CurrentField -Keys "This rule assigns General Technical Support tickets created under the $ServiceName service to $Responsible."
+    Send-SeKeys -Element $CurrentField -Keys "This rule assigns General Technical Support tickets created under the $CategoryName service to $Responsible."
 
     # Save
     $SaveBtn = Find-SeElement -Driver $Driver -XPath '//div[@id="divButtons"]//button//span[text()="Save"]'
@@ -71,22 +42,18 @@ function New-AutomationRule($ServiceOfferingId, $GTSServiceOfferingId, $GTSServi
     # Automation Conditions
     $Option = Find-SeElement -Driver $Driver -Id "filter_column_0"
     $SelectElement = [OpenQA.Selenium.Support.UI.SelectElement]::new($Option)
-    $SelectElement.SelectByValue(5315)
-    $CurrentField = Find-SeElement -Driver $Driver -Id "lu_text_0"
-    $SearchBtn = Find-SeElement -Driver $Driver -XPath "//table//tbody//tr//td//div//span//a[@data-textid='lu_text_0']"
+    $SelectElement.SelectByValue(789) # Condition is for Service
+    $SearchBtn = Find-SeElement -Driver $Driver -XPath "//a[@data-textid='lu_text_0']"
     Invoke-SeClick -Element $SearchBtn
     $Windows = Get-SeWindow -Driver $Driver
     Switch-SeWindow -Driver $Driver -Window $Windows[1]
-    $CurrentField = Find-SeElement -Wait -Timeout 3 -Driver $Driver -Id "searchText"
-    Send-SeKeys -Element $CurrentField -Keys $GTSServiceOfferingName
-    $SearchBtn = Find-SeElement -Driver $Driver -XPath "//button[@title='Search']"
+    $CurrentField = Find-SeElement -Wait -Timeout 3 -Driver $Driver -Id "ctl00_cphSearchRows_txtSearch"
+    Send-SeKeys -Element $CurrentField -Keys $ServiceName
+    $SearchBtn = Find-SeElement -Driver $Driver -Id "ctl00_btnSearch"
     Invoke-SeClick -Element $SearchBtn
-    $WebDriverWait = [OpenQA.Selenium.Support.UI.WebDriverWait]::new($Driver, (New-TimeSpan -Seconds 20))
-    $Condition = [OpenQA.Selenium.Support.UI.ExpectedConditions]::InvisibilityOfElementLocated(([OpenQA.Selenium.By]::ClassName("WhiteOut")))
-    $WebDriverWait.Until($Condition) | Out-null
-    $ServiceCheckbox = Find-SeElement -Wait -Timeout 3 -Driver $Driver -Id $GTSServiceOfferingId
+    $ServiceCheckbox = Find-SeElement -Wait -Timeout 5 -Driver $Driver -Id "ctl00_cphGrid_grdItems_chkMass_$ServiceId"
     Invoke-SeClick -Element $ServiceCheckbox
-    $InsertBtn = Find-SeElement -Driver $Driver -XPath "//div[@class='pull-left']//button[2]"
+    $InsertBtn = Find-SeElement -Driver $Driver -XPath "//div[@class='pull-left']//input[@value='Insert Checked']"
     Invoke-SeClick -Element $InsertBtn
     Switch-SeWindow -Driver $Driver -Window $Windows[0]
 
@@ -95,7 +62,7 @@ function New-AutomationRule($ServiceOfferingId, $GTSServiceOfferingId, $GTSServi
     Invoke-SeClick -Element $CurrentField
     $CurrentField = Find-SeElement -Driver $Driver -Id "s2id_autogen7_search"
     Send-SeKeys -Element $CurrentField -Keys $Responsible
-    $Selection = Find-SeElement -Driver $Driver -XPath "//div[@class='select2-result-label']//div[contains(text(),'$Responsible')]"
+    $Selection = Find-SeElement -Wait -Timeout 5 -Driver $Driver -XPath "//div[@class='select2-result-label']//div[contains(text(),'$Responsible')]"
     Invoke-SeClick -Element $Selection
 
     # Save edit

@@ -17,11 +17,12 @@ $PromptBox = New-Object AnyBox.AnyBox
 $PromptBox.Title = 'Service Creator'
 $PromptBox.Prompts = @(
     New-AnyBoxPrompt -Name "CatName" -InputType Text -Message 'Category name or category ID (case sensitive):' -ValidateNotEmpty
-    New-AnyBoxPrompt -Name "ShortName" -InputType Text -Message 'Short name of the category for general support. This will generate General -shortname- Support:' -ValidateNotEmpty
+    New-AnyBoxPrompt -Name "ServiceName" -InputType Text -Message 'General support service name:' -ValidateNotEmpty
+    New-AnyBoxPrompt -Name "Responsible" -InputType Text -Message 'Responsible (do not include "Group" in the name):' -ValidateNotEmpty
     New-AnyBoxPrompt -Name "EvalOrder" -InputType Text -Message 'GTS Automation Rule evaluation order:' -ValidateNotEmpty
-    New-AnyBoxPrompt -Name "Staff" -Group "Audience:" -InputType Checkbox -Message "Staff"
-    New-AnyBoxPrompt -Name "Students" -Group "Audience:" -InputType Checkbox -Message "Students"
-    New-AnyBoxPrompt -Name "Faculty" -Group "Audience:" -InputType Checkbox -Message "Faculty"
+    New-AnyBoxPrompt -Name "Staff" -Group "Audience (at least one required):" -InputType Checkbox -Message "Staff"
+    New-AnyBoxPrompt -Name "Students" -Group "Audience (at least one required):" -InputType Checkbox -Message "Students"
+    New-AnyBoxPrompt -Name "Faculty" -Group "Audience (at least one required):" -InputType Checkbox -Message "Faculty"
 )
 $PromptBox.Buttons = @(
     New-AnyBoxButton -Text 'Submit' -IsDefault
@@ -29,6 +30,8 @@ $PromptBox.Buttons = @(
 )
 $UserInput = $PromptBox | Show-AnyBox
 $UserInput
+
+$Responsible = "Client Services - Service Desk - Support"
 
 if ($UserInput.Cancel -or $UserInput.Cancel) {
     Show-AnyBox -Message "Operation cancelled" -Buttons 'Ok'
@@ -45,15 +48,20 @@ if($UserInput.CatName -notmatch '^\d+$') { # If input is a service name
     Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/ServiceCatalog") -Driver $Driver
     $CategoryURL = $Driver.FindElementByXPath("//a[text()='$($UserInput.CatName)']").getAttribute('href')
     $CategoryId = $CategoryURL.Substring($CategoryURL.IndexOf('?') + 12)
-} else {
-    $CategoryId = $CategoryName
+} else { # If input is a service ID
+    $CategoryId = $UserInput.CatName
+    Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/ServiceCatalog") -Driver $Driver
+    $CategoryURL = $Driver.FindElementByXPath("//a[contains(@href, $($UserInput.CatName))]")
+    $UserInput.CatName = $CategoryURL.Text
 }
 
 # Create new service
-New-Service $CategoryId $UserInput
+$ServiceId = New-Service $CategoryId $UserInput
 
 # Create GTS Automation Rule
-New-AutomationRule $ServiceId $ServiceName $EvalOrder
+New-AutomationRule $ServiceId $UserInput.ServiceName $UserInput.CatName $UserInput.Responsible $UserInput.EvalOrder
 
 # Stop driver
 Stop-SeDriver -Driver $Driver
+
+Show-AnyBox -Message "Service created" -Button "Ok" -DefaultButton "Ok"

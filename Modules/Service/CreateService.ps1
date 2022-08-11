@@ -1,14 +1,13 @@
 #------ Create Main Service Offering ------#
 
 function New-Service($CategoryId, $UserInput) {
-    $ServiceName = "General $($UserInput.CatName) Support"
     Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/New?CategoryID=$CategoryId") -Driver $Driver
 
     #Name
     $CurrentField = Find-SeElement -Wait -Timeout 60 -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtName"
-    Send-SeKeys -Element $CurrentField -Keys $ServiceName
+    Send-SeKeys -Element $CurrentField -Keys $UserInput.ServiceName
     $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtShortDescription"
-    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket."
+    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $($UserInput.ServiceName) ticket."
 
     # Long description
     $SourceBtn = Find-SeElement -Wait -Timeout 15 -Driver $Driver -Id "cke_16"
@@ -17,7 +16,7 @@ function New-Service($CategoryId, $UserInput) {
     $WebDriverWait.Until($Condition) | Out-null
     Invoke-SeClick -Element $SourceBtn
     $CurrentField = Find-SeElement -Wait -Timeout 10 -Driver $Driver -XPath '//div[@id="cke_1_contents"]//textarea'
-    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $ServiceName ticket."
+    Send-SeKeys -Element $CurrentField -Keys "If you don't find what you are looking for, please submit a $($UserInput.ServiceName) ticket."
 
     # Order
     $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_txtOrder"
@@ -89,6 +88,13 @@ function New-Service($CategoryId, $UserInput) {
     $SaveBtn = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_btnSave"
     Invoke-SeClick -Element $SaveBtn
 
+    # Get newly created service offering ID
+    $ServiceId = Find-SeElement -Wait -Timeout 5 -Driver $Driver -Id "divServiceID"
+    # Write-Host ($ServiceId | Format-Table | Out-String)
+    $ServiceId = $ServiceId.Text
+    $ServiceId = $ServiceId.Substring(12) # Remove 'Service ID: ' from result
+    Write-Host $ServiceId
+
     # Select form
     $EditBtn = Find-SeElement -Driver $Driver -Wait -Timeout 60 -XPath "//span[@id='ctl00_ctl00_cpContent_cpContent_lnkEdit']/a"
     Invoke-SeClick -Element $EditBtn
@@ -104,4 +110,5 @@ function New-Service($CategoryId, $UserInput) {
     $SaveBtn = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_ctl00_cpContent_cpContent_cpContent_btnSaveNew"
     Invoke-SeClick -Element $SaveBtn
 
-}  
+    return $ServiceId
+}
