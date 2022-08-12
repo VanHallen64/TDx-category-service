@@ -48,6 +48,10 @@ function New-AutomationRule($ServiceId, $ServiceName, $CategoryName, $Responsibl
     $Windows = Get-SeWindow -Driver $Driver
     Switch-SeWindow -Driver $Driver -Window $Windows[1]
     $CurrentField = Find-SeElement -Wait -Timeout 3 -Driver $Driver -Id "ctl00_cphSearchRows_txtSearch"
+    $pos = $ServiceName.IndexOf(",") 
+    if($pos -ne -1) { # Ignore service name after comma
+        $ServiceName = $ServiceName.Substring(0, $pos)
+    }
     Send-SeKeys -Element $CurrentField -Keys $ServiceName
     $SearchBtn = Find-SeElement -Driver $Driver -Id "ctl00_btnSearch"
     Invoke-SeClick -Element $SearchBtn
