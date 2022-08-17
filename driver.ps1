@@ -40,14 +40,19 @@ $Driver = Start-SeFirefox
 $WindowSize = [System.Drawing.Size]::new(800, 700)
 $driver.Manage().Window.Size = $WindowSize
 
+# Sign in and wait for categories div
+$URL = "$Domain"+"TDClient/81/askit/Requests/ServiceCatalog"
+Enter-SeUrl $URL -Driver $Driver
+$SignInButton = Find-SeElement -Driver $Driver -XPath "//div[@title='Sign In']/a[contains(text(), 'Sign In')]"
+Invoke-SeClick -Element $SignInButton
+Find-SeElement -Wait -Timeout 60 -Driver $Driver -Id "divCats" | Out-null
+
 # Category name and ID validation
 if($UserInput.CatName -notmatch '^\d+$') { # If input is a service name
-    Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/ServiceCatalog") -Driver $Driver
     $CategoryURL = $Driver.FindElementByXPath("//a[text()='$($UserInput.CatName)']").getAttribute('href')
     $CategoryId = $CategoryURL.Substring($CategoryURL.IndexOf('?') + 12)
 } else { # If input is a service ID
     $CategoryId = $UserInput.CatName
-    Enter-SeUrl ("$Domain"+"TDClient/81/askit/Requests/ServiceCatalog") -Driver $Driver
     $CategoryURL = $Driver.FindElementByXPath("//a[contains(@href, $($UserInput.CatName))]")
     $UserInput.CatName = $CategoryURL.Text
 }
