@@ -74,7 +74,7 @@ function New-Service($CategoryId, $UserInput) {
     # Requirements
     if ($Audience) {
         if ($Audience.split(',').Length - 1 -gt 0) {
-            $Audience = $Audience.Substring(0,$Audience.LastIndexOf(',')) + "or" + $Audience.Substring($Audience.LastIndexOf(',')+1, $Audience.Length - $Audience.LastIndexOf(',')-1)
+            $Audience = $Audience.Substring(0,$Audience.LastIndexOf(',')) + "or " + $Audience.Substring($Audience.LastIndexOf(',')+1, $Audience.Length - $Audience.LastIndexOf(',')-1)
         }
         $CurrentField = Find-SeElement -Driver $Driver -Id "ctl00_ctl00_cpContent_cpContent_attribute4212"
         Send-SeKeys -Element $CurrentField -Keys "Be $($Audience.ToLower())."
